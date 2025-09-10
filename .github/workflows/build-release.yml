@@ -39,14 +39,14 @@ jobs:
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.16.0'
+        flutter-version: '3.27.0'  # 更新到支持 Dart 3.7.2+ 的版本
         channel: 'stable'
 
     - name: Install dependencies
       run: flutter pub get
 
     - name: Run tests
-      run: flutter test
+      run: flutter test --reporter compact  # 添加compact报告格式
 
     - name: Update version if specified
       if: github.event_name == 'workflow_dispatch' && (github.event.inputs.version != '' || github.event.inputs.build_number != '')
@@ -77,10 +77,10 @@ jobs:
         echo "Current version: $FULL_VERSION"
 
     - name: Build APK
-      run: flutter build apk --release
+      run: flutter build apk --release --verbose
 
     - name: Build App Bundle
-      run: flutter build appbundle --release
+      run: flutter build appbundle --release --verbose
 
     - name: Create release directory
       run: |
@@ -93,12 +93,14 @@ jobs:
       with:
         name: todolist-apk-v${{ steps.version.outputs.version }}
         path: release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.apk
+        retention-days: 30  # 添加保留天数
 
     - name: Upload AAB artifact
       uses: actions/upload-artifact@v4
       with:
         name: todolist-aab-v${{ steps.version.outputs.version }}
         path: release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.aab
+        retention-days: 30  # 添加保留天数
 
     - name: Create Release
       if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
@@ -112,6 +114,8 @@ jobs:
           **Version:** ${{ steps.version.outputs.version }}  
           **Build:** ${{ steps.version.outputs.build_number }}  
           **Release Date:** ${{ github.event.head_commit.timestamp }}
+          **Flutter Version:** 3.24.0  
+          **Dart SDK:** 3.5.0+
           
           ### 📝 Release Notes
           ${{ github.event.inputs.release_notes || '新版本发布' }}
@@ -131,6 +135,11 @@ jobs:
           - ⏰ 超时提醒功能
           - 💾 本地数据存储
           - 🌸 每日一言功能
+          
+          ### 🛠️ Technical Details
+          - **Min SDK**: 21 (Android 5.0)
+          - **Target SDK**: 34 (Android 14)
+          - **Architecture**: arm64-v8a, armeabi-v7a, x86_64
         files: |
           release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.apk
           release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.aab
