@@ -1,0 +1,140 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: false
+        default: ''
+      build_number:
+        description: 'Build number (e.g., 1)'
+        required: false
+        default: ''
+      release_notes:
+        description: 'Release notes'
+        required: false
+        default: 'New release'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+        channel: 'stable'
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Run tests
+      run: flutter test
+
+    - name: Update version if specified
+      if: github.event_name == 'workflow_dispatch' && (github.event.inputs.version != '' || github.event.inputs.build_number != '')
+      run: |
+        if [ -n "${{ github.event.inputs.version }}" ] && [ -n "${{ github.event.inputs.build_number }}" ]; then
+          # 更新版本号和构建号
+          sed -i "s/^version: .*/version: ${{ github.event.inputs.version }}+${{ github.event.inputs.build_number }}/" pubspec.yaml
+        elif [ -n "${{ github.event.inputs.version }}" ]; then
+          # 只更新版本号，保持原构建号
+          current_build=$(grep "^version:" pubspec.yaml | sed 's/.*+//')
+          sed -i "s/^version: .*/version: ${{ github.event.inputs.version }}+${current_build}/" pubspec.yaml
+        elif [ -n "${{ github.event.inputs.build_number }}" ]; then
+          # 只更新构建号，保持原版本号
+          current_version=$(grep "^version:" pubspec.yaml | sed 's/+.*//')
+          current_version=${current_version#version: }
+          sed -i "s/^version: .*/version: ${current_version}+${{ github.event.inputs.build_number }}/" pubspec.yaml
+        fi
+
+    - name: Get version info
+      id: version
+      run: |
+        VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+        BUILD_NUMBER=$(grep "^version:" pubspec.yaml | sed 's/.*+//')
+        FULL_VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+        echo "Current version: $FULL_VERSION"
+
+    - name: Build APK
+      run: flutter build apk --release
+
+    - name: Build App Bundle
+      run: flutter build appbundle --release
+
+    - name: Create release directory
+      run: |
+        mkdir -p release
+        cp build/app/outputs/flutter-apk/app-release.apk release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.apk
+        cp build/app/outputs/bundle/release/app-release.aab release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.aab
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: todolist-apk-v${{ steps.version.outputs.version }}
+        path: release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.apk
+
+    - name: Upload AAB artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: todolist-aab-v${{ steps.version.outputs.version }}
+        path: release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.aab
+
+    - name: Create Release
+      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}
+        name: TodoList v${{ steps.version.outputs.version }} (Build ${{ steps.version.outputs.build_number }})
+        body: |
+          ## 📱 TodoList App Release
+          
+          **Version:** ${{ steps.version.outputs.version }}  
+          **Build:** ${{ steps.version.outputs.build_number }}  
+          **Release Date:** ${{ github.event.head_commit.timestamp }}
+          
+          ### 📝 Release Notes
+          ${{ github.event.inputs.release_notes || '新版本发布' }}
+          
+          ### 📦 Downloads
+          - **APK文件**: todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.apk
+          - **AAB文件**: todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.aab
+          
+          ### 🔧 Installation
+          1. 下载APK文件
+          2. 在Android设备上启用"未知来源"安装
+          3. 安装APK文件
+          
+          ### ✨ Features in this version
+          - 📋 Todo项目管理
+          - 🎨 自定义颜色选择
+          - ⏰ 超时提醒功能
+          - 💾 本地数据存储
+          - 🌸 每日一言功能
+        files: |
+          release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.apk
+          release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.aab
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
