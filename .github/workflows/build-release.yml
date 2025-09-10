@@ -31,7 +31,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Java
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '17'
@@ -89,20 +89,20 @@ jobs:
         cp build/app/outputs/bundle/release/app-release.aab release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.aab
 
     - name: Upload APK artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: todolist-apk-v${{ steps.version.outputs.version }}
         path: release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.apk
 
     - name: Upload AAB artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: todolist-aab-v${{ steps.version.outputs.version }}
         path: release/todolist-v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}.aab
 
     - name: Create Release
       if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build_number }}
         name: TodoList v${{ steps.version.outputs.version }} (Build ${{ steps.version.outputs.build_number }})
