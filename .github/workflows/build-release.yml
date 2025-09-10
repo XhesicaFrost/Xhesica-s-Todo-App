@@ -39,7 +39,7 @@ jobs:
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.5'  # 使用稳定版本
+        flutter-version: '3.35.3'  # 使用您要求的版本
         channel: 'stable'
 
     - name: Flutter Doctor
@@ -114,8 +114,8 @@ jobs:
           
           **Version:** ${{ steps.version.outputs.version }}  
           **Build:** ${{ steps.version.outputs.build_number }}  
-          **Flutter Version:** 3.24.5
-          **Dart SDK:** 3.5.x
+          **Flutter Version:** 3.35.3
+          **Dart SDK:** 3.7.2+
           **Release Date:** ${{ github.event.head_commit.timestamp }}
           
           ### 📝 Release Notes
