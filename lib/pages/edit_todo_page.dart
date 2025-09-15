@@ -16,6 +16,7 @@ class _EditTodoPageState extends State<EditTodoPage> {
   late TextEditingController descriptionController;
   late DateTime selectedDateTime;
   Color? selectedColor;
+  late Priority selectedPriority; // 新增优先级状态
 
   @override
   void initState() {
@@ -25,6 +26,7 @@ class _EditTodoPageState extends State<EditTodoPage> {
       ..selection = TextSelection.fromPosition(const TextPosition(offset: 0));
     selectedDateTime = widget.todo.dateTime;
     selectedColor = widget.todo.color; // 可能为null
+    selectedPriority = widget.todo.priority; // 初始化优先级
   }
 
   @override
@@ -74,6 +76,57 @@ class _EditTodoPageState extends State<EditTodoPage> {
     );
   }
 
+  // 新增优先级选择器
+  void _showPriorityPicker() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('选择优先级'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children:
+                Priority.values.map((priority) {
+                  return ListTile(
+                    leading: Icon(priority.icon, color: priority.color),
+                    title: Text(priority.displayName),
+                    subtitle: Text(
+                      _getPriorityDescription(priority),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    selected: selectedPriority == priority,
+                    selectedTileColor: priority.color.withOpacity(0.1),
+                    onTap: () {
+                      setState(() {
+                        selectedPriority = priority;
+                      });
+                      Navigator.of(context).pop();
+                    },
+                  );
+                }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  // 获取优先级描述
+  String _getPriorityDescription(Priority priority) {
+    switch (priority) {
+      case Priority.importantUrgent:
+        return '立即处理，优先完成';
+      case Priority.importantNotUrgent:
+        return '计划安排，重要任务';
+      case Priority.notImportantUrgent:
+        return '尽快处理，委托他人';
+      case Priority.notImportantNotUrgent:
+        return '有时间再做，可以延后';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,6 +141,7 @@ class _EditTodoPageState extends State<EditTodoPage> {
               decoration: const InputDecoration(labelText: 'Title'),
             ),
             const SizedBox(height: 20),
+
             // 时间和颜色并排显示
             Row(
               children: [
@@ -136,6 +190,7 @@ class _EditTodoPageState extends State<EditTodoPage> {
                   ),
                 ),
                 const SizedBox(width: 20),
+
                 // 颜色选择区域
                 Expanded(
                   flex: 1,
@@ -175,7 +230,74 @@ class _EditTodoPageState extends State<EditTodoPage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
+
+            // 新增优先级选择区域
+            Row(
+              children: [
+                const Text('Priority:', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _showPriorityPicker,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selectedPriority.color.withOpacity(0.1),
+                        border: Border.all(color: selectedPriority.color),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            selectedPriority.icon,
+                            color: selectedPriority.color,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  selectedPriority.displayName,
+                                  style: TextStyle(
+                                    color: selectedPriority.color,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  _getPriorityDescription(selectedPriority),
+                                  style: TextStyle(
+                                    color: selectedPriority.color.withOpacity(
+                                      0.7,
+                                    ),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: selectedPriority.color,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
             Expanded(
               child: TextField(
                 controller: descriptionController,
@@ -191,6 +313,7 @@ class _EditTodoPageState extends State<EditTodoPage> {
               ),
             ),
             const SizedBox(height: 20),
+
             Row(
               children: [
                 Expanded(
@@ -202,6 +325,7 @@ class _EditTodoPageState extends State<EditTodoPage> {
                         widget.todo.description = descriptionController.text;
                         widget.todo.dateTime = selectedDateTime;
                         widget.todo.color = selectedColor; // 可能为null
+                        widget.todo.priority = selectedPriority; // 更新优先级
                       });
                       Navigator.pop(context, widget.todo);
                     },

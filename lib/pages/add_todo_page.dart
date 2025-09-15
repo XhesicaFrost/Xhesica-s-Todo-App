@@ -13,7 +13,8 @@ class _AddTodoPageState extends State<AddTodoPage> {
   late TextEditingController titleController;
   late TextEditingController descriptionController;
   late DateTime selectedDateTime;
-  Color? selectedColor; // 默认无色
+  Color? selectedColor;
+  Priority selectedPriority = Priority.notImportantNotUrgent; // 新增优先级状态
 
   @override
   void initState() {
@@ -21,7 +22,6 @@ class _AddTodoPageState extends State<AddTodoPage> {
     titleController = TextEditingController();
     descriptionController = TextEditingController();
 
-    // 设置默认时间为今天的23:59
     final now = DateTime.now();
     selectedDateTime = DateTime(now.year, now.month, now.day, 23, 59);
   }
@@ -55,7 +55,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  selectedColor = null; // 设置为无色
+                  selectedColor = null;
                 });
                 Navigator.of(context).pop();
               },
@@ -68,6 +68,35 @@ class _AddTodoPageState extends State<AddTodoPage> {
               child: const Text('OK'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // 新增优先级选择器
+  void _showPriorityPicker() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('选择优先级'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children:
+                Priority.values.map((priority) {
+                  return ListTile(
+                    leading: Icon(priority.icon, color: priority.color),
+                    title: Text(priority.displayName),
+                    selected: selectedPriority == priority,
+                    onTap: () {
+                      setState(() {
+                        selectedPriority = priority;
+                      });
+                      Navigator.of(context).pop();
+                    },
+                  );
+                }).toList(),
+          ),
         );
       },
     );
@@ -87,6 +116,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
               decoration: const InputDecoration(labelText: 'Title'),
             ),
             const SizedBox(height: 20),
+
             // 时间和颜色并排显示
             Row(
               children: [
@@ -135,6 +165,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
                   ),
                 ),
                 const SizedBox(width: 20),
+
                 // 颜色选择区域
                 Expanded(
                   flex: 1,
@@ -174,6 +205,56 @@ class _AddTodoPageState extends State<AddTodoPage> {
                 ),
               ],
             ),
+
+            const SizedBox(height: 20),
+
+            // 新增优先级选择区域
+            Row(
+              children: [
+                const Text('Priority:', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _showPriorityPicker,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selectedPriority.color.withOpacity(0.1),
+                        border: Border.all(color: selectedPriority.color),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            selectedPriority.icon,
+                            color: selectedPriority.color,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            selectedPriority.displayName,
+                            style: TextStyle(
+                              color: selectedPriority.color,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: selectedPriority.color,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 20),
             Expanded(
               child: TextField(
@@ -199,7 +280,8 @@ class _AddTodoPageState extends State<AddTodoPage> {
                       title: titleController.text,
                       description: descriptionController.text,
                       dateTime: selectedDateTime,
-                      color: selectedColor, // 可以为null
+                      color: selectedColor,
+                      priority: selectedPriority, // 新增优先级
                     );
                     Navigator.pop(context, newTodo);
                   }
