@@ -30,11 +30,37 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            if (System.getenv()["CI"]) {
+                // CI 环境配置
+                storeFile file("todolist-key.jks")
+                storePassword System.getenv()["STORE_PASSWORD"]
+                keyAlias System.getenv()["KEY_ALIAS"]
+                keyPassword System.getenv()["KEY_PASSWORD"]
+            } else {
+                // 本地环境配置 (可选)
+                def keystorePropertiesFile = rootProject.file("key.properties")
+                if (keystorePropertiesFile.exists()) {
+                    def keystoreProperties = new Properties()
+                    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                    storeFile file(keystoreProperties['storeFile'])
+                    storePassword keystoreProperties['storePassword']
+                    keyAlias keystoreProperties['keyAlias']
+                    keyPassword keystoreProperties['keyPassword']
+                }
+            }
+        }
+    }
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig signingConfigs.release
+            
+            minifyEnabled true
+            useProguard true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }

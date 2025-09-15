@@ -48,6 +48,11 @@ jobs:
     - name: Install dependencies
       run: flutter pub get
 
+    - name: Decode and setup keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/todolist-key.jks
+        echo "Keystore file created successfully"
+
     # 暂时移除测试步骤，直到我们创建正确的测试
     # - name: Run tests
     #   run: flutter test --reporter compact
@@ -78,9 +83,17 @@ jobs:
         echo "Current version: $FULL_VERSION"
 
     - name: Build APK
+      env:
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: flutter build apk --release --verbose
 
     - name: Build App Bundle
+      env:
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: flutter build appbundle --release --verbose
 
     - name: Create release directory
