@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -18,7 +21,7 @@ android {
         jvmTarget = "1.8"
     }
 
-    // 🔑 签名配置 - Kotlin DSL 语法
+    // 🔑 签名配置 - 修复后的 Kotlin DSL 语法
     signingConfigs {
         create("release") {
             if (System.getenv("CI") != null) {
@@ -31,8 +34,8 @@ android {
                 // 本地环境配置
                 val keystorePropertiesFile = rootProject.file("key.properties")
                 if (keystorePropertiesFile.exists()) {
-                    val keystoreProperties = java.util.Properties()
-                    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+                    val keystoreProperties = Properties()
+                    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
                     
                     storeFile = file(keystoreProperties["storeFile"] as String)
                     storePassword = keystoreProperties["storePassword"] as String
@@ -53,7 +56,7 @@ android {
 
     buildTypes {
         release {
-            // 🔑 使用签名配置 - Kotlin DSL 语法
+            // 🔑 使用签名配置
             signingConfig = signingConfigs.getByName("release")
             
             isMinifyEnabled = true
